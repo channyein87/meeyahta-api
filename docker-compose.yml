@@ -1,0 +1,12 @@
+services:
+  meeyahta:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: meeyahta-api:latest
+    platform: linux/arm/v7
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./config.json:/app/config.json:ro
+    restart: unless-stopped
