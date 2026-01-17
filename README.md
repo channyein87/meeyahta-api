@@ -36,6 +36,14 @@ The server:
 - Sends the request to `https://api.transport.nsw.gov.au/v1/tp/trip` with the API key from `config.json`.
 - Flattens each journey's legs into a list of trips, extracting the origin and destination station names (without the `"Station"` suffix) and formatting departure/arrival times in Australia/Sydney time (e.g., `08:00 PM`).
 
+Example request:
+
+```bash
+curl -X POST http://localhost:3000/api/trip \
+  -H "Content-Type: application/json" \
+  -d '{"origin":"10101102","destination":"10101137"}'
+```
+
 Response:
 
 ```json
