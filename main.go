@@ -13,7 +13,7 @@ func main() {
 
 	srv := newServer(cfg)
 
-	log.Println("mee yahta api listening on :3000")
+	log.Println("meeyahta api listening on :3000")
 	if err := http.ListenAndServe(":3000", srv.routes()); err != nil {
 		log.Fatalf("server stopped: %v", err)
 	}

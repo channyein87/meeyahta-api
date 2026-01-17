@@ -229,21 +229,6 @@ func formatTime(value string, loc *time.Location) string {
 	return parsed.In(loc).Format("03:04 PM")
 }
 
-// This helper allows tests to inject custom responses without hitting the upstream API.
-func newTestServer(cfg config, client *http.Client, loc *time.Location) *server {
-	if client == nil {
-		client = &http.Client{Timeout: 20 * time.Second}
-	}
-	if loc == nil {
-		loc = sydneyLocation()
-	}
-	return &server{
-		cfg:      cfg,
-		client:   client,
-		location: loc,
-	}
-}
-
 func sydneyLocation() *time.Location {
 	loc, err := time.LoadLocation("Australia/Sydney")
 	if err != nil {
