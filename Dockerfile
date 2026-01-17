@@ -13,7 +13,7 @@ FROM gcr.io/distroless/static:nonroot
 WORKDIR /app
 
 # Provide timezone data for Australia/Sydney conversions.
-COPY --from=builder /usr/share/zoneinfo/Australia/Sydney /usr/share/zoneinfo/Australia/Sydney
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=builder /out/meeyahta /app/meeyahta
 
 ENTRYPOINT ["/app/meeyahta"]
