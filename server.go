@@ -165,7 +165,12 @@ func (s *server) callTransportAPI(ctx context.Context, origin, destination strin
 }
 
 func extractTrips(resp upstreamResponse, loc *time.Location) []trip {
-	var trips []trip
+	totalLegs := 0
+	for _, journey := range resp.Journeys {
+		totalLegs += len(journey.Legs)
+	}
+
+	trips := make([]trip, 0, totalLegs)
 	for _, journey := range resp.Journeys {
 		for _, leg := range journey.Legs {
 			trips = append(trips, trip{
