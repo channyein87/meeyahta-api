@@ -1,6 +1,10 @@
 package main
 
 import (
+	"bytes"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 )
@@ -33,6 +37,71 @@ func TestFormatTimeRFC3339(t *testing.T) {
 
 	if got := formatTime(input, loc); got != expected {
 		t.Fatalf("expected %q, got %q", expected, got)
+	}
+}
+
+type roundTripFunc func(req *http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+func TestHandleTripCounts(t *testing.T) {
+	tests := []struct {
+		name           string
+		body           string
+		wantStatus     int
+		expectUpstream string
+	}{
+		{
+			name:           "defaults to 2",
+			body:           `{"origin":"10101102","destination":"10101137"}`,
+			wantStatus:     http.StatusOK,
+			expectUpstream: "2",
+		},
+		{
+			name:           "uses provided counts",
+			body:           `{"origin":"10101102","destination":"10101137","counts":5}`,
+			wantStatus:     http.StatusOK,
+			expectUpstream: "5",
+		},
+		{
+			name:       "rejects invalid counts",
+			body:       `{"origin":"10101102","destination":"10101137","counts":11}`,
+			wantStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := newServer(config{APIKey: "dummy"})
+
+			var seenCount string
+			s.client = &http.Client{
+				Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+					seenCount = req.URL.Query().Get("calcNumberOfTrips")
+					resp := &http.Response{
+						StatusCode: http.StatusOK,
+						Body:       io.NopCloser(bytes.NewBufferString(`{"journeys":[]}`)),
+						Header:     make(http.Header),
+					}
+					return resp, nil
+				}),
+			}
+
+			req := httptest.NewRequest(http.MethodPost, "/api/trip", bytes.NewBufferString(tt.body))
+			rr := httptest.NewRecorder()
+
+			s.handleTrip(rr, req)
+
+			if rr.Code != tt.wantStatus {
+				t.Fatalf("expected status %d, got %d", tt.wantStatus, rr.Code)
+			}
+
+			if tt.wantStatus == http.StatusOK && seenCount != tt.expectUpstream {
+				t.Fatalf("expected calcNumberOfTrips=%s, got %s", tt.expectUpstream, seenCount)
+			}
+		})
 	}
 }
 

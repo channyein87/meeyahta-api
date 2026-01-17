@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -20,6 +21,7 @@ type server struct {
 type tripRequest struct {
 	Origin      string `json:"origin"`
 	Destination string `json:"destination"`
+	Counts      int    `json:"counts"`
 }
 
 type trip struct {
@@ -91,9 +93,18 @@ func (s *server) handleTrip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("trip payload origin=%s destination=%s", req.Origin, req.Destination)
+	counts := req.Counts
+	if counts == 0 {
+		counts = 2
+	}
+	if counts < 1 || counts > 10 {
+		http.Error(w, "counts must be between 1 and 10", http.StatusBadRequest)
+		return
+	}
 
-	trips, err := s.fetchTrips(r.Context(), req.Origin, req.Destination)
+	log.Printf("trip payload origin=%s destination=%s counts=%d", req.Origin, req.Destination, counts)
+
+	trips, err := s.fetchTrips(r.Context(), req.Origin, req.Destination, counts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
@@ -106,15 +117,15 @@ func (s *server) handleTrip(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *server) fetchTrips(ctx context.Context, origin, destination string) ([]trip, error) {
-	resp, err := s.callTransportAPI(ctx, origin, destination)
+func (s *server) fetchTrips(ctx context.Context, origin, destination string, counts int) ([]trip, error) {
+	resp, err := s.callTransportAPI(ctx, origin, destination, counts)
 	if err != nil {
 		return nil, err
 	}
 	return extractTrips(resp, s.location), nil
 }
 
-func (s *server) callTransportAPI(ctx context.Context, origin, destination string) (upstreamResponse, error) {
+func (s *server) callTransportAPI(ctx context.Context, origin, destination string, counts int) (upstreamResponse, error) {
 	now := time.Now().In(s.location)
 	q := url.Values{
 		"outputFormat":      []string{"rapidJSON"},
@@ -126,7 +137,7 @@ func (s *server) callTransportAPI(ctx context.Context, origin, destination strin
 		"name_origin":       []string{origin},
 		"type_destination":  []string{"any"},
 		"name_destination":  []string{destination},
-		"calcNumberOfTrips": []string{"2"},
+		"calcNumberOfTrips": []string{strconv.Itoa(counts)},
 		"excludedMeans":     []string{"checkbox"},
 		"exclMOT_5":         []string{"1"},
 		"TfNSWTR":           []string{"true"},
