@@ -76,6 +76,8 @@ func (s *server) handleTrip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("request received method=%s path=%s remote=%s", r.Method, r.URL.Path, r.RemoteAddr)
+
 	var req tripRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
@@ -88,6 +90,8 @@ func (s *server) handleTrip(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "origin and destination are required", http.StatusBadRequest)
 		return
 	}
+
+	log.Printf("trip payload origin=%s destination=%s", req.Origin, req.Destination)
 
 	trips, err := s.fetchTrips(r.Context(), req.Origin, req.Destination)
 	if err != nil {
@@ -155,6 +159,8 @@ func (s *server) callTransportAPI(ctx context.Context, origin, destination strin
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		return upstreamResponse{}, fmt.Errorf("transport nsw api returned status %d", res.StatusCode)
 	}
+
+	log.Printf("transport nsw api success status=%d origin=%s destination=%s", res.StatusCode, origin, destination)
 
 	var body upstreamResponse
 	if err := json.NewDecoder(res.Body).Decode(&body); err != nil {
