@@ -34,7 +34,7 @@ Request body:
 The server:
 - Builds the upstream query with the current Australia/Sydney date (`itdDate`) and time (`itdTime`).
 - Sends the request to `https://api.transport.nsw.gov.au/v1/tp/trip` with the API key from `config.json`.
-- Flattens each journey into a list of trips, extracting the origin and destination station names (without the `"Station"` suffix) and formatting departure/arrival times in Australia/Sydney time (e.g., `08:00 PM`).
+- Flattens each journey's legs into a list of trips, extracting the origin and destination station names (without the `"Station"` suffix) and formatting departure/arrival times in Australia/Sydney time (e.g., `08:00 PM`).
 
 Response:
 
@@ -44,8 +44,8 @@ Response:
     {
       "origin": "Redfern",
       "destination": "Town Hall",
-      "departureTime": "07:00 PM",
-      "arrivalTime": "07:30 PM"
+      "depart": "07:00 PM",
+      "arrive": "07:30 PM"
     }
   ]
 }

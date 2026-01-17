@@ -23,10 +23,10 @@ type tripRequest struct {
 }
 
 type trip struct {
-	Origin        string `json:"origin"`
-	Destination   string `json:"destination"`
-	DepartureTime string `json:"departureTime"`
-	ArrivalTime   string `json:"arrivalTime"`
+	Origin      string `json:"origin"`
+	Destination string `json:"destination"`
+	Depart      string `json:"depart"`
+	Arrive      string `json:"arrive"`
 }
 
 type tripResponse struct {
@@ -49,7 +49,11 @@ type upstreamLeg struct {
 type waypoint struct {
 	DisassembledName       string `json:"disassembledName"`
 	DepartureTimeEstimated string `json:"departureTimeEstimated"`
+	DepartureTimePlanned   string `json:"departureTimePlanned"`
+	DepartureTimeBase      string `json:"departureTimeBaseTimetable"`
 	ArrivalTimeEstimated   string `json:"arrivalTimeEstimated"`
+	ArrivalTimePlanned     string `json:"arrivalTimePlanned"`
+	ArrivalTimeBase        string `json:"arrivalTimeBaseTimetable"`
 }
 
 func newServer(cfg config) *server {
@@ -161,20 +165,16 @@ func (s *server) callTransportAPI(ctx context.Context, origin, destination strin
 }
 
 func extractTrips(resp upstreamResponse, loc *time.Location) []trip {
-	trips := make([]trip, 0, len(resp.Journeys))
+	var trips []trip
 	for _, journey := range resp.Journeys {
-		if len(journey.Legs) == 0 {
-			continue
+		for _, leg := range journey.Legs {
+			trips = append(trips, trip{
+				Origin:      cleanStationName(leg.Origin.DisassembledName),
+				Destination: cleanStationName(leg.Destination.DisassembledName),
+				Depart:      formatTime(firstNonEmpty(leg.Origin.DepartureTimeEstimated, leg.Origin.DepartureTimePlanned, leg.Origin.DepartureTimeBase), loc),
+				Arrive:      formatTime(firstNonEmpty(leg.Destination.ArrivalTimeEstimated, leg.Destination.ArrivalTimePlanned, leg.Destination.ArrivalTimeBase), loc),
+			})
 		}
-		firstLeg := journey.Legs[0]
-		lastLeg := journey.Legs[len(journey.Legs)-1]
-
-		trips = append(trips, trip{
-			Origin:        cleanStationName(firstLeg.Origin.DisassembledName),
-			Destination:   cleanStationName(lastLeg.Destination.DisassembledName),
-			DepartureTime: formatTime(firstLeg.Origin.DepartureTimeEstimated, loc),
-			ArrivalTime:   formatTime(lastLeg.Destination.ArrivalTimeEstimated, loc),
-		})
 	}
 	return trips
 }
@@ -227,6 +227,15 @@ func formatTime(value string, loc *time.Location) string {
 	}
 
 	return parsed.In(loc).Format("03:04 PM")
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, v := range values {
+		if strings.TrimSpace(v) != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 func sydneyLocation() *time.Location {
