@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -52,11 +53,10 @@ type waypoint struct {
 }
 
 func newServer(cfg config) *server {
-	loc, _ := time.LoadLocation("Australia/Sydney")
 	return &server{
 		cfg:      cfg,
 		client:   &http.Client{Timeout: 20 * time.Second},
-		location: loc,
+		location: sydneyLocation(),
 	}
 }
 
@@ -235,11 +235,20 @@ func newTestServer(cfg config, client *http.Client, loc *time.Location) *server 
 		client = &http.Client{Timeout: 20 * time.Second}
 	}
 	if loc == nil {
-		loc, _ = time.LoadLocation("Australia/Sydney")
+		loc = sydneyLocation()
 	}
 	return &server{
 		cfg:      cfg,
 		client:   client,
 		location: loc,
 	}
+}
+
+func sydneyLocation() *time.Location {
+	loc, err := time.LoadLocation("Australia/Sydney")
+	if err != nil {
+		log.Printf("warning: falling back to UTC timezone: %v", err)
+		return time.UTC
+	}
+	return loc
 }
