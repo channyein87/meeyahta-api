@@ -1,9 +1,6 @@
 services:
   meeyahta:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: meeyahta-api:latest
+    build: .
     platform: linux/arm/v7
     ports:
       - "3000:3000"
