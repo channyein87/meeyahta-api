@@ -2,6 +2,8 @@ FROM golang:1.24-bookworm AS builder
 WORKDIR /src
 
 COPY go.mod ./
+RUN go mod download
+
 COPY . .
 
 ENV CGO_ENABLED=0
