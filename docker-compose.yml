@@ -3,9 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      platforms:
-        - linux/arm/v7
     image: meeyahta-api:latest
+    platform: linux/arm/v7
     ports:
       - "3000:3000"
     volumes:
